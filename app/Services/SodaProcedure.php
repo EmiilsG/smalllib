@@ -16,12 +16,12 @@ class SodaProcedure
                 r.name AS lasitaja_vards,
                 r.email AS lasitaja_epasts,
                 COUNT(b.id) AS kaveto_aiznemumu_skaits,
-                COALESCE(SUM(CAST(julianday('now') - julianday(b.due_at) AS INTEGER)), 0) AS kopejas_kavejuma_dienas,
-                ROUND(COALESCE(SUM(CAST(julianday('now') - julianday(b.due_at) AS INTEGER)), 0) * ?, 2) AS soda_nauda
+                COALESCE(SUM(CURRENT_DATE - b.due_at), 0) AS kopejas_kavejuma_dienas,
+                ROUND(COALESCE(SUM(CURRENT_DATE - b.due_at), 0) * ?, 2) AS soda_nauda
             FROM readers r
             LEFT JOIN borrowings b ON b.reader_id = r.id
                 AND b.returned_at IS NULL
-                AND b.due_at < date('now')
+                AND b.due_at < CURRENT_DATE
             WHERE r.id = ?
             GROUP BY r.id, r.name, r.email
         ", [self::CENA_PAR_DIENU, $lasitajaId]);
@@ -52,12 +52,12 @@ class SodaProcedure
                 r.name AS lasitaja_vards,
                 r.email AS lasitaja_epasts,
                 COUNT(b.id) AS kaveto_aiznemumu_skaits,
-                COALESCE(SUM(CAST(julianday('now') - julianday(b.due_at) AS INTEGER)), 0) AS kopejas_kavejuma_dienas,
-                ROUND(COALESCE(SUM(CAST(julianday('now') - julianday(b.due_at) AS INTEGER)), 0) * ?, 2) AS soda_nauda
+                COALESCE(SUM(CURRENT_DATE - b.due_at), 0) AS kopejas_kavejuma_dienas,
+                ROUND(COALESCE(SUM(CURRENT_DATE - b.due_at), 0) * ?, 2) AS soda_nauda
             FROM readers r
             LEFT JOIN borrowings b ON b.reader_id = r.id
                 AND b.returned_at IS NULL
-                AND b.due_at < date('now')
+                AND b.due_at < CURRENT_DATE
             GROUP BY r.id, r.name, r.email
             ORDER BY soda_nauda DESC
         ", [self::CENA_PAR_DIENU]);

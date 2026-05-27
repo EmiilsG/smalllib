@@ -8,7 +8,7 @@ return new class extends Migration
     public function up(): void
     {
         DB::statement("
-            CREATE VIEW IF NOT EXISTS kavetie_aiznemumi AS
+            CREATE OR REPLACE VIEW kavetie_aiznemumi AS
             SELECT
                 b.id AS aiznemuma_id,
                 bk.id AS gramatas_id,
@@ -19,12 +19,12 @@ return new class extends Migration
                 r.email AS lasitaja_epasts,
                 b.borrowed_at AS aiznemts,
                 b.due_at AS jaatdod,
-                CAST(julianday('now') - julianday(b.due_at) AS INTEGER) AS kavejuma_dienas
+                (CURRENT_DATE - b.due_at) AS kavejuma_dienas
             FROM borrowings b
             JOIN books bk ON bk.id = b.book_id
             JOIN readers r ON r.id = b.reader_id
             WHERE b.returned_at IS NULL
-              AND b.due_at < date('now')
+              AND b.due_at < CURRENT_DATE
             ORDER BY b.due_at ASC
         ");
     }

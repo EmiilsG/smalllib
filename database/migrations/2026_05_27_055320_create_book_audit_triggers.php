@@ -8,9 +8,8 @@ return new class extends Migration
     public function up(): void
     {
         DB::statement("
-            CREATE TRIGGER IF NOT EXISTS log_book_insert
-            AFTER INSERT ON books
-            FOR EACH ROW
+            CREATE OR REPLACE FUNCTION log_book_insert_func()
+            RETURNS TRIGGER AS $$
             BEGIN
                 INSERT INTO book_log
                     (book_id, action, old_available_copies, new_available_copies,
@@ -19,14 +18,15 @@ return new class extends Migration
                     (NEW.id, 'create',
                      NULL, NEW.available_copies,
                      NULL, NEW.total_copies,
-                     datetime('now'), datetime('now'));
-            END
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
         ");
 
         DB::statement("
-            CREATE TRIGGER IF NOT EXISTS log_book_update
-            AFTER UPDATE ON books
-            FOR EACH ROW
+            CREATE OR REPLACE FUNCTION log_book_update_func()
+            RETURNS TRIGGER AS $$
             BEGIN
                 INSERT INTO book_log
                     (book_id, action, old_available_copies, new_available_copies,
@@ -41,14 +41,15 @@ return new class extends Migration
                      END,
                      OLD.available_copies, NEW.available_copies,
                      OLD.total_copies, NEW.total_copies,
-                     datetime('now'), datetime('now'));
-            END
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                RETURN NEW;
+            END;
+            $$ LANGUAGE plpgsql;
         ");
 
         DB::statement("
-            CREATE TRIGGER IF NOT EXISTS log_book_delete
-            AFTER DELETE ON books
-            FOR EACH ROW
+            CREATE OR REPLACE FUNCTION log_book_delete_func()
+            RETURNS TRIGGER AS $$
             BEGIN
                 INSERT INTO book_log
                     (book_id, action, old_available_copies, new_available_copies,
@@ -57,15 +58,53 @@ return new class extends Migration
                     (OLD.id, 'delete',
                      OLD.available_copies, NULL,
                      OLD.total_copies, NULL,
-                     datetime('now'), datetime('now'));
-            END
+                     CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+                RETURN OLD;
+            END;
+            $$ LANGUAGE plpgsql;
+        ");
+
+        DB::statement("
+            DROP TRIGGER IF EXISTS log_book_insert ON books
+        ");
+
+        DB::statement("
+            CREATE TRIGGER log_book_insert
+            AFTER INSERT ON books
+            FOR EACH ROW
+            EXECUTE FUNCTION log_book_insert_func();
+        ");
+
+        DB::statement("
+            DROP TRIGGER IF EXISTS log_book_update ON books
+        ");
+
+        DB::statement("
+            CREATE TRIGGER log_book_update
+            AFTER UPDATE ON books
+            FOR EACH ROW
+            EXECUTE FUNCTION log_book_update_func();
+        ");
+
+        DB::statement("
+            DROP TRIGGER IF EXISTS log_book_delete ON books
+        ");
+
+        DB::statement("
+            CREATE TRIGGER log_book_delete
+            AFTER DELETE ON books
+            FOR EACH ROW
+            EXECUTE FUNCTION log_book_delete_func();
         ");
     }
 
     public function down(): void
     {
-        DB::statement("DROP TRIGGER IF EXISTS log_book_insert");
-        DB::statement("DROP TRIGGER IF EXISTS log_book_update");
-        DB::statement("DROP TRIGGER IF EXISTS log_book_delete");
+        DB::statement("DROP TRIGGER IF EXISTS log_book_insert ON books");
+        DB::statement("DROP TRIGGER IF EXISTS log_book_update ON books");
+        DB::statement("DROP TRIGGER IF EXISTS log_book_delete ON books");
+        DB::statement("DROP FUNCTION IF EXISTS log_book_insert_func()");
+        DB::statement("DROP FUNCTION IF EXISTS log_book_update_func()");
+        DB::statement("DROP FUNCTION IF EXISTS log_book_delete_func()");
     }
 };

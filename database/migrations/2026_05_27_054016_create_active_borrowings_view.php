@@ -8,7 +8,7 @@ return new class extends Migration
     public function up(): void
     {
         DB::statement("
-            CREATE VIEW IF NOT EXISTS active_borrowings AS
+            CREATE OR REPLACE VIEW active_borrowings AS
             SELECT
                 b.id AS borrowing_id,
                 bk.title AS book_title,
@@ -17,7 +17,7 @@ return new class extends Migration
                 r.email AS reader_email,
                 b.borrowed_at,
                 b.due_at,
-                julianday(b.due_at) - julianday('now') AS days_until_due
+                (b.due_at - CURRENT_DATE) AS days_until_due
             FROM borrowings b
             JOIN books bk ON bk.id = b.book_id
             JOIN readers r ON r.id = b.reader_id
